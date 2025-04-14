@@ -21,8 +21,12 @@ while True:
             setup = signal.get('setup', 'Nepoznat setup')
             verovatnoca = signal.get('verovatnoća', 'N/A')
             napomena = signal.get('napomena', '')
-            active = setup.split('+') if '+' in setup else [setup]
+            entry = signal.get('entry')
+            sl = signal.get('sl')
+            tp = signal.get('tp')
+            rrr = round((tp - entry) / (entry - sl), 2) if entry and sl and tp else "N/A"
 
+            active = setup.split('+') if '+' in setup else [setup]
             all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick"]
             manip_list = []
             for m in all_manips:
@@ -33,21 +37,29 @@ while True:
             manip_summary = ', '.join(manip_list)
 
             if len(active) >= 2:
-                msg = f"""TESTNI SIGNAL za {symbol} [{tf}]
-Manipulacije: {manip_summary}
-Ukupno: {len(active)}/5 - SIGNAL AKTIVAN (TEST režim)
-Setup: {setup}
-Verovatnoća: {verovatnoca}%
-Napomena: {napomena}"""
+                msg = (
+                    f"TESTNI SIGNAL za {symbol} [{tf}]\n"
+                    f"Manipulacije: {manip_summary}\n"
+                    f"Ukupno: {len(active)}/5 - SIGNAL AKTIVAN (TEST režim)\n\n"
+                    f"Setup: {setup}\n"
+                    f"Entry: {entry}\n"
+                    f"SL: {sl}\n"
+                    f"TP: {tp}\n"
+                    f"RRR: {rrr}\n"
+                    f"Verovatnoća: {verovatnoca}%\n"
+                    f"Napomena: {napomena}"
+                )
                 print(msg)
                 send_telegram_message(msg)
             else:
                 now = time.time()
                 if now - last_no_signal_sent[tf] > no_signal_delay:
-                    msg = f"""TEST analiza za {symbol} [{tf}]
-Manipulacije: {manip_summary}
-Ukupno: {len(active)}/5 - Ispod praga (TEST režim)
-Signal NIJE poslat"""
+                    msg = (
+                        f"TEST analiza za {symbol} [{tf}]\n"
+                        f"Manipulacije: {manip_summary}\n"
+                        f"Ukupno: {len(active)}/5 - Ispod praga (TEST režim)\n"
+                        f"Signal NIJE poslat"
+                    )
                     print(msg)
                     send_telegram_message(msg)
                     last_no_signal_sent[tf] = now
@@ -56,9 +68,11 @@ Signal NIJE poslat"""
         else:
             now = time.time()
             if now - last_no_signal_sent[tf] > no_signal_delay:
-                msg = f"""TEST analiza za {symbol} [{tf}]
-Manipulacije: 0/5 - Ispod praga (TEST režim)
-Signal NIJE poslat"""
+                msg = (
+                    f"TEST analiza za {symbol} [{tf}]\n"
+                    f"Manipulacije: 0/5 - Ispod praga (TEST režim)\n"
+                    f"Signal NIJE poslat"
+                )
                 print(msg)
                 send_telegram_message(msg)
                 last_no_signal_sent[tf] = now
