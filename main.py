@@ -4,12 +4,12 @@ from telegram_notifier import send_telegram_message
 import time
 
 keep_alive()
-send_telegram_message("✅ Matrix3M TEST režim aktiviran – prati sve TF-ove sa 2/5 pragom.")
+send_telegram_message("✅ Matrix3M LIVE režim aktiviran – 2/5 manipulacija aktivira signal.")
 
 symbol = "BTCUSDT"
 timeframes = ["1m", "5m", "15m", "1h", "4h"]
 last_no_signal_sent = {tf: 0 for tf in timeframes}
-no_signal_delay = 60 * 60  # 1 sat
+no_signal_delay = 60 * 60 * 2  # 2 sata
 
 while True:
     for tf in timeframes:
@@ -38,9 +38,9 @@ while True:
 
             if len(active) >= 2:
                 msg = (
-                    f"TESTNI SIGNAL za {symbol} [{tf}]\n"
+                    f"⚠️ SIGNAL za {symbol} [{tf}]\n"
                     f"Manipulacije: {manip_summary}\n"
-                    f"Ukupno: {len(active)}/5 - SIGNAL AKTIVAN (TEST režim)\n\n"
+                    f"Ukupno: {len(active)}/5 - SIGNAL AKTIVAN\n\n"
                     f"Setup: {setup}\n"
                     f"Entry: {entry}\n"
                     f"SL: {sl}\n"
@@ -56,30 +56,30 @@ while True:
                 now = time.time()
                 if now - last_no_signal_sent[tf] > no_signal_delay:
                     msg = (
-                        f"TEST analiza za {symbol} [{tf}]\n"
+                        f"📭 ANALIZA za {symbol} [{tf}]\n"
                         f"Manipulacije: {manip_summary}\n"
-                        f"Ukupno: {len(active)}/5 - Ispod praga (TEST režim)\n"
+                        f"Ukupno: {len(active)}/5 - Ispod praga\n"
                         f"Signal NIJE poslat"
                     )
                     print(msg)
                     send_telegram_message(msg)
                     last_no_signal_sent[tf] = now
                 else:
-                    print(f"⏱ Skipped 'nema signal' poruka za {tf} (još u okviru 1h)")
+                    print(f"⏱ Preskočeno slanje 'nema signal' poruke za {tf} (manje od 2h)")
 
         else:
             now = time.time()
             if now - last_no_signal_sent[tf] > no_signal_delay:
                 msg = (
-                    f"TEST analiza za {symbol} [{tf}]\n"
-                    f"Manipulacije: 0/5 - Ispod praga (TEST režim)\n"
+                    f"📭 ANALIZA za {symbol} [{tf}]\n"
+                    f"Manipulacije: 0/5 - Ispod praga\n"
                     f"Signal NIJE poslat"
                 )
                 print(msg)
                 send_telegram_message(msg)
                 last_no_signal_sent[tf] = now
             else:
-                print(f"⏱ Skipped 'nema signal' poruka za {tf} (još u okviru 1h)")
+                print(f"⏱ Preskočeno slanje 'nema signal' poruke za {tf} (manje od 2h)")
 
     print("🕒 Spavanje 60 sekundi...\n")
     time.sleep(60)
