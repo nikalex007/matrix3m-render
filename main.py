@@ -51,6 +51,7 @@ while True:
                 )
                 print(msg)
                 send_telegram_message(msg)
+
             else:
                 now = time.time()
                 if now - last_no_signal_sent[tf] > no_signal_delay:
@@ -65,6 +66,7 @@ while True:
                     last_no_signal_sent[tf] = now
                 else:
                     print(f"⏱ Skipped 'nema signal' poruka za {tf} (još u okviru 1h)")
+
         else:
             now = time.time()
             if now - last_no_signal_sent[tf] > no_signal_delay:
