@@ -4,7 +4,7 @@ from telegram_notifier import send_telegram_message
 import time
 
 keep_alive()
-send_telegram_message("Matrix3M TEST režim aktiviran – signal se šalje kad se poklope 2/5 manipulacije.")
+send_telegram_message("✅ Matrix3M TEST režim aktiviran – prati sve TF-ove sa 2/5 pragom.")
 
 symbol = "BTCUSDT"
 timeframes = ["1m", "5m", "15m", "1h", "4h"]
@@ -13,9 +13,9 @@ no_signal_delay = 60 * 60  # 1 sat
 
 while True:
     for tf in timeframes:
-        print(f"Proveravam: {symbol} / {tf}")
+        print(f"🔍 Proveravam: {symbol} / {tf}")
         signal = analyze_market(symbol, tf)
-        print(f"Rezultat analize za {tf}: {signal}")
+        print(f"📊 Rezultat analize za {tf}: {signal}")
 
         if signal:
             setup = signal.get('setup', 'Nepoznat setup')
@@ -64,7 +64,7 @@ while True:
                     send_telegram_message(msg)
                     last_no_signal_sent[tf] = now
                 else:
-                    print(f"Preskočena 'nema signal' poruka za {tf} (još u okviru 1h)")
+                    print(f"⏱ Skipped 'nema signal' poruka za {tf} (još u okviru 1h)")
         else:
             now = time.time()
             if now - last_no_signal_sent[tf] > no_signal_delay:
@@ -77,7 +77,7 @@ while True:
                 send_telegram_message(msg)
                 last_no_signal_sent[tf] = now
             else:
-                print(f"Preskočena 'nema signal' poruka za {tf} (još u okviru 1h)")
+                print(f"⏱ Skipped 'nema signal' poruka za {tf} (još u okviru 1h)")
 
-    print("Spavanje 60 sekundi...\n")
+    print("🕒 Spavanje 60 sekundi...\n")
     time.sleep(60)
