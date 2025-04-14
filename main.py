@@ -4,17 +4,17 @@ from telegram_notifier import send_telegram_message
 import time
 
 keep_alive()
-send_telegram_message("✅ Matrix3M bot je aktiviran i prati BTCUSDT manipulacije...")
+print("✅ Matrix3M bot je pokrenut...")
+send_telegram_message("🤖 Matrix3M bot je aktiviran i prati BTCUSDT manipulacije...")
 
 symbol = "BTCUSDT"
 timeframes = ["1m", "5m", "15m"]
-last_no_signal_sent = {tf: 0 for tf in timeframes}  # vreme kad je zadnji put poslata poruka bez signala
-no_signal_delay = 60 * 60  # 1 sat (3600 sekundi)
 
 while True:
     for tf in timeframes:
         print(f"🔍 Proveravam: {symbol} / {tf}")
         signal = analyze_market(symbol, tf)
+        print(f"📊 Rezultat analize za {tf}: {signal}")
 
         if signal:
             setup = signal.get('setup', 'Nepoznat setup')
@@ -29,8 +29,7 @@ while True:
                 else:
                     manip_list.append(f"[ ] {m}")
             manip_summary = ', '.join(manip_list)
-
-            msg = f"""🚨 Analiza za {symbol} [{tf}]
+            msg = f"""✅ Analiza za {symbol} [{tf}]
 Manipulacije: {manip_summary}
 Ukupno: {len(active)}/5 → SIGNAL AKTIVAN
 Setup: {setup}
@@ -38,16 +37,12 @@ Verovatnoća: {verovatnoca}%
 Napomena: {napomena}"""
             print(msg)
             send_telegram_message(msg)
-
         else:
-            now = time.time()
-            if now - last_no_signal_sent[tf] > no_signal_delay:
-                msg = f"🔎 Analiza za {symbol} [{tf}]\nManipulacije: Ispod praga\nSignal NIJE poslat"
-                print(msg)
-                send_telegram_message(msg)
-                last_no_signal_sent[tf] = now
-            else:
-                print(f"⏱ Skipped slanje za {tf} – već poslato ranije")
+            msg = f"""❌ Analiza za {symbol} [{tf}]
+Manipulacije: Ispod praga
+Signal NIJE poslat"""
+            print(msg)
+            send_telegram_message(msg)
 
-    print("🕒 Spavanje 60s...\n")
-    time.sleep(60)
+    print("🕒 Spavam 30 sekundi...\n")
+    time.sleep(30)  # TESTNI INTERVAL – posle vrati na 3600
