@@ -4,14 +4,14 @@ from telegram_notifier import send_telegram_message
 from datetime import datetime, timedelta
 import time
 
-# Aktiviraj web server da Render ne ugasi bot
+# Aktiviraj web server
 keep_alive()
 
-# Prva poruka
-send_telegram_message("✅ Matrix3M bot je aktiviran i analizira BTCUSDT na 5 timeframe-ova.")
+# Početna poruka
+send_telegram_message("✅ Matrix3M bot je aktiviran i analizira BTCUSDT na 1m, 5m i 15m timeframe-ovima.")
 
 symbol = "BTCUSDT"
-timeframes = ["1m", "5m", "15m", "1h", "4h"]
+timeframes = ["1m", "5m", "15m"]
 last_status = datetime.now()
 
 while True:
@@ -53,7 +53,6 @@ Napomena: {napomena}"""
         else:
             print(f"⛔ Nema signala za {symbol} / {tf}")
 
-    # Status poruka ako nema signala 2h
     if datetime.now() - last_status >= timedelta(hours=2):
         send_telegram_message("⏳ Matrix3M bot je aktivan, ali još nema validnih signala. Pratim BTCUSDT...")
         last_status = datetime.now()
