@@ -1,31 +1,33 @@
 from keep_alive import keep_alive
 from manipulation_detector import analyze_market
 from telegram_notifier import send_telegram_message
+from datetime import datetime, timedelta
 import time
 
+# Aktiviraj server za Render
 keep_alive()
-send_telegram_message("✅ Matrix3M LIVE režim aktiviran – 2/5 manipulacija aktivira signal.")
+
+# Početna notifikacija
+send_telegram_message("✅ Matrix3M bot je aktiviran i analizira BTCUSDT na 5 timeframe-ova.")
 
 symbol = "BTCUSDT"
 timeframes = ["1m", "5m", "15m", "1h", "4h"]
-last_no_signal_sent = {tf: 0 for tf in timeframes}
-no_signal_delay = 60 * 60 * 2  # 2 sata
+last_status = datetime.now()
 
 while True:
     for tf in timeframes:
-        print(f"🔍 Proveravam: {symbol} / {tf}")
+        print(f"📊 Proveravam: {symbol} / {tf}")
         signal = analyze_market(symbol, tf)
-        print(f"📊 Rezultat analize za {tf}: {signal}")
 
         if signal:
             setup = signal.get('setup', 'Nepoznat setup')
             verovatnoca = signal.get('verovatnoća', 'N/A')
             napomena = signal.get('napomena', '')
-            entry = signal.get('entry')
-            sl = signal.get('sl')
-            tp = signal.get('tp')
-            rrr = round((tp - entry) / (entry - sl), 2) if entry and sl and tp else "N/A"
+            entry = signal.get('entry', 'N/A')
+            sl = signal.get('sl', 'N/A')
+            tp = signal.get('tp', 'N/A')
 
+            # Detekcija manipulacija
             active = setup.split('+') if '+' in setup else [setup]
             all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick"]
             manip_list = []
@@ -36,50 +38,26 @@ while True:
                     manip_list.append(f"[ ] {m}")
             manip_summary = ', '.join(manip_list)
 
-            if len(active) >= 2:
-                msg = (
-                    f"⚠️ SIGNAL za {symbol} [{tf}]\n"
-                    f"Manipulacije: {manip_summary}\n"
-                    f"Ukupno: {len(active)}/5 - SIGNAL AKTIVAN\n\n"
-                    f"Setup: {setup}\n"
-                    f"Entry: {entry}\n"
-                    f"SL: {sl}\n"
-                    f"TP: {tp}\n"
-                    f"RRR: {rrr}\n"
-                    f"Verovatnoća: {verovatnoca}%\n"
-                    f"Napomena: {napomena}"
-                )
-                print(msg)
-                send_telegram_message(msg)
+            msg = f"""🎯 SIGNAL AKTIVAN
+Symbol: {symbol} [{tf}]
+Manipulacije: {manip_summary}
+Ukupno: {len(active)}/5 → ✅ SIGNAL POSLAT
+Setup: {setup}
+Verovatnoća: {verovatnoca}%
+Entry: {entry}
+SL: {sl}
+TP: {tp}
+Napomena: {napomena}"""
 
-            else:
-                now = time.time()
-                if now - last_no_signal_sent[tf] > no_signal_delay:
-                    msg = (
-                        f"📭 ANALIZA za {symbol} [{tf}]\n"
-                        f"Manipulacije: {manip_summary}\n"
-                        f"Ukupno: {len(active)}/5 - Ispod praga\n"
-                        f"Signal NIJE poslat"
-                    )
-                    print(msg)
-                    send_telegram_message(msg)
-                    last_no_signal_sent[tf] = now
-                else:
-                    print(f"⏱ Preskočeno slanje 'nema signal' poruke za {tf} (manje od 2h)")
-
+            print(msg)
+            send_telegram_message(msg)
         else:
-            now = time.time()
-            if now - last_no_signal_sent[tf] > no_signal_delay:
-                msg = (
-                    f"📭 ANALIZA za {symbol} [{tf}]\n"
-                    f"Manipulacije: 0/5 - Ispod praga\n"
-                    f"Signal NIJE poslat"
-                )
-                print(msg)
-                send_telegram_message(msg)
-                last_no_signal_sent[tf] = now
-            else:
-                print(f"⏱ Preskočeno slanje 'nema signal' poruke za {tf} (manje od 2h)")
+            print(f"⛔ Nema signala za {symbol} / {tf}")
 
-    print("🕒 Spavanje 60 sekundi...\n")
+    # Svaka 2 sata - status ako nema signala
+    if datetime.now() - last_status >= timedelta(hours=2):
+        send_telegram_message("⏳ Matrix3M bot je aktivan, ali još nema validnih signala. Pratim BTCUSDT...")
+        last_status = datetime.now()
+
+    print("🕒 Spavanje 60s...\n")
     time.sleep(60)
