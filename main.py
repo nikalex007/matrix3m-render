@@ -8,10 +8,10 @@ import time
 keep_alive()
 
 # Početna poruka
-send_telegram_message("✅ Matrix3M bot je aktiviran i analizira BTCUSDT na 1m i 5m timeframe-ovima.")
+send_telegram_message("✅ Matrix3M bot je aktiviran i analizira BTCUSDT isključivo na 1m timeframe-u.")
 
 symbol = "BTCUSDT"
-timeframes = ["1m", "5m"]
+timeframes = ["1m"]
 last_status = datetime.now()
 
 while True:
@@ -56,8 +56,8 @@ Napomena: {napomena}"""
             print(f"⛔ Nema signala za {symbol} / {tf}")
 
     if datetime.now() - last_status >= timedelta(hours=2):
-        send_telegram_message("⏳ Matrix3M bot je aktivan, ali još nema validnih signala. Pratim BTCUSDT...")
+        send_telegram_message("⏳ Matrix3M bot je aktivan, ali još nema validnih signala. Pratim BTCUSDT na 1m...")
         last_status = datetime.now()
 
-    print("🕒 Spavanje 60s...\n")
-    time.sleep(60)
+    print("🕒 Spavanje 30s...\n")
+    time.sleep(30)
