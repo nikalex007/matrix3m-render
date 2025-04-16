@@ -12,11 +12,23 @@ def get_klines(symbol, interval, limit=50):
 def get_orderbook(symbol, limit=10):
     url = f"{BINANCE_BASE_URL}/api/v3/depth"
     params = {"symbol": symbol, "limit": limit}
-    response = requests.get(url, params=params)
-    return response.json()
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        data = response.json()
+        if 'bids' in data and 'asks' in data:
+            return data
+        else:
+            print("⚠️ Order book ne sadrži 'bids' ili 'asks'")
+            return None
+    except Exception as e:
+        print("❌ Greška u get_orderbook:", str(e))
+        return None
 
 def detect_spoofing(symbol):
     ob = get_orderbook(symbol)
+    if not ob or 'bids' not in ob or 'asks' not in ob:
+        print("Greška u analizi: 'bids'")
+        return False
     bids = sum(float(b[1]) for b in ob['bids'])
     asks = sum(float(a[1]) for a in ob['asks'])
     ratio = bids / asks if asks > 0 else 0
@@ -67,6 +79,7 @@ def analyze_market(symbol, timeframe):
     try:
         klines = get_klines(symbol, timeframe, limit=50)
         if not klines:
+            print("⚠️ Klines prazne")
             return None
 
         spoof = detect_spoofing(symbol)
