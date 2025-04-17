@@ -3,7 +3,7 @@ import statistics
 
 BINANCE_BASE_URL = "https://api.binance.com"
 
-def get_klines(symbol, interval, limit=20):
+def get_klines(symbol, interval, limit=30):
     url = f"{BINANCE_BASE_URL}/api/v3/klines"
     params = {"symbol": symbol, "interval": interval, "limit": limit}
     response = requests.get(url, params=params)
@@ -29,55 +29,55 @@ def detect_spoofing(symbol):
     bids = sum(float(b[1]) for b in ob['bids'])
     asks = sum(float(a[1]) for a in ob['asks'])
     ratio = bids / asks if asks > 0 else 0
-    return ratio > 1.8 or ratio < 0.6
+    return ratio > 1.5 or ratio < 0.7
 
 def detect_delta_flip(klines):
-    if len(klines) < 8:
+    if len(klines) < 12:
         return False
     volumes = [float(k[5]) for k in klines]
-    recent = volumes[-5:]
-    avg = statistics.mean(volumes[:-5]) if len(volumes) > 5 else 0
-    return any(v > avg * 1.15 for v in recent)
+    recent = volumes[-10:]
+    avg = statistics.mean(volumes[:-10]) if len(volumes) > 10 else 0
+    return any(v > avg * 1.1 for v in recent)
 
 def detect_imbalance(klines):
-    if len(klines) < 10:
+    if len(klines) < 15:
         return False
-    for k in klines[-10:]:
+    for k in klines[-15:]:
         high = float(k[2])
         low = float(k[3])
         open_price = float(k[1])
         close_price = float(k[4])
         spread = high - low
         body = abs(close_price - open_price)
-        if spread > 0 and body / spread < 0.35:
+        if spread > 0 and body / spread < 0.5:
             return True
     return False
 
 def detect_choc(klines):
-    if len(klines) < 6:
+    if len(klines) < 11:
         return False
-    prev_high = float(klines[-6][2])
+    prev_high = float(klines[-11][2])
     curr_high = float(klines[-1][2])
     return curr_high > prev_high
 
 def detect_trap_wick(klines):
-    if len(klines) < 10:
+    if len(klines) < 15:
         return False
-    for k in klines[-10:]:
+    for k in klines[-15:]:
         high = float(k[2])
         low = float(k[3])
         open_price = float(k[1])
         close_price = float(k[4])
         wick_up = high - max(open_price, close_price)
         wick_down = min(open_price, close_price) - low
-        if wick_up > wick_down * 1.8 or wick_down > wick_up * 1.8:
+        if wick_up > wick_down * 1.4 or wick_down > wick_up * 1.4:
             return True
     return False
 
 def analyze_market(symbol, timeframe):
     try:
-        klines = get_klines(symbol, timeframe, limit=20)
-        if not klines or len(klines) < 6:
+        klines = get_klines(symbol, timeframe, limit=30)
+        if not klines or len(klines) < 12:
             return None
 
         spoof = detect_spoofing(symbol)
@@ -100,8 +100,8 @@ def analyze_market(symbol, timeframe):
             tp = round(entry * 1.015, 2)
             return {
                 "setup": " + ".join(setup),
-                "verovatnoća": 55 + len(setup) * 10,
-                "napomena": "EMERGENCY MODE: signal baziran na 1+ manipulaciji",
+                "verovatnoća": 50 + len(setup) * 10,
+                "napomena": "ULTRA prošireni pregled: manipulacija otkrivena",
                 "entry": entry,
                 "sl": sl,
                 "tp": tp
@@ -110,5 +110,5 @@ def analyze_market(symbol, timeframe):
         return None
 
     except Exception as e:
-        print("Greška u analizi (emergency):", str(e))
+        print("Greška u analizi (ultra extended):", str(e))
         return None
