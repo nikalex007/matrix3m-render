@@ -32,14 +32,16 @@ def detect_spoofing(symbol):
     return ratio > 1.8 or ratio < 0.6
 
 def detect_delta_flip(klines):
-    volumes = [float(k[5]) for k in klines]
-    if len(volumes) < 8:
+    if len(klines) < 8:
         return False
+    volumes = [float(k[5]) for k in klines]
     recent = volumes[-5:]
     avg = statistics.mean(volumes[:-5]) if len(volumes) > 5 else 0
     return any(v > avg * 1.15 for v in recent)
 
 def detect_imbalance(klines):
+    if len(klines) < 10:
+        return False
     for k in klines[-10:]:
         high = float(k[2])
         low = float(k[3])
@@ -59,6 +61,8 @@ def detect_choc(klines):
     return curr_high > prev_high
 
 def detect_trap_wick(klines):
+    if len(klines) < 10:
+        return False
     for k in klines[-10:]:
         high = float(k[2])
         low = float(k[3])
@@ -73,7 +77,7 @@ def detect_trap_wick(klines):
 def analyze_market(symbol, timeframe):
     try:
         klines = get_klines(symbol, timeframe, limit=20)
-        if not klines:
+        if not klines or len(klines) < 6:
             return None
 
         spoof = detect_spoofing(symbol)
