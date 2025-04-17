@@ -74,6 +74,20 @@ def detect_trap_wick(klines):
             return True
     return False
 
+def detect_momentum_breakout(klines):
+    if len(klines) < 12:
+        return False
+    last = klines[-1]
+    prev = klines[-2]
+    last_range = float(last[2]) - float(last[3])
+    prev_range = float(prev[2]) - float(prev[3])
+    if prev_range == 0:
+        return False
+    range_spike = last_range > prev_range * 2
+    volume_spike = float(last[5]) > float(prev[5]) * 2
+    price_change = abs(float(last[4]) - float(prev[4])) / float(prev[4]) > 0.005
+    return range_spike and volume_spike and price_change
+
 def analyze_market(symbol, timeframe):
     try:
         klines = get_klines(symbol, timeframe, limit=30)
@@ -85,6 +99,7 @@ def analyze_market(symbol, timeframe):
         imbalance = detect_imbalance(klines)
         choc = detect_choc(klines)
         wick = detect_trap_wick(klines)
+        momentum = detect_momentum_breakout(klines)
 
         setup = []
         if spoof: setup.append("Spoofing")
@@ -92,6 +107,7 @@ def analyze_market(symbol, timeframe):
         if imbalance: setup.append("Imbalance Spike")
         if choc: setup.append("CHoCH Break")
         if wick: setup.append("Trap Wick")
+        if momentum: setup.append("Momentum Breakout")
 
         if len(setup) > 0:
             last_close = float(klines[-1][4])
@@ -101,7 +117,7 @@ def analyze_market(symbol, timeframe):
             return {
                 "setup": " + ".join(setup),
                 "verovatnoća": 50 + len(setup) * 10,
-                "napomena": "ULTRA prošireni pregled: manipulacija otkrivena",
+                "napomena": "Matrix Ultra Mode: signal sa manipulacijom ili momentumom",
                 "entry": entry,
                 "sl": sl,
                 "tp": tp
@@ -110,5 +126,5 @@ def analyze_market(symbol, timeframe):
         return None
 
     except Exception as e:
-        print("Greška u analizi (ultra extended):", str(e))
+        print("Greška u analizi (momentum):", str(e))
         return None
