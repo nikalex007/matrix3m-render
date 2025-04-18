@@ -66,3 +66,4 @@ Napomena: {napomena}"""
     if debug_mode:
         print("🕒 Spavanje 30 sekundi...\n")
     time.sleep(30)
+# verzija: debug_aktivan_1031
