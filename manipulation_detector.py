@@ -108,6 +108,16 @@ def analyze_market(symbol, timeframe):
         wick = detect_trap_wick(klines)
         momentum = detect_momentum_breakout(klines)
 
+        # DEBUG ISPIS
+        print(f"--- Detekcija ({symbol} / {timeframe}) ---")
+        print(f"Spoofing: {spoof}")
+        print(f"Delta Flip: {delta}")
+        print(f"Imbalance Spike: {imbalance}")
+        print(f"CHoCH Break: {choc}")
+        print(f"Trap Wick: {wick}")
+        print(f"Momentum Breakout: {momentum}")
+        print("-----------------------------------------")
+
         setup = []
         if spoof: setup.append("Spoofing")
         if delta: setup.append("Delta Flip")
@@ -124,7 +134,7 @@ def analyze_market(symbol, timeframe):
             return {
                 "setup": " + ".join(setup),
                 "verovatnoća": 50 + len(setup) * 10,
-                "napomena": "Matrix Ultra Mode: signal sa manipulacijom ili momentumom",
+                "napomena": "DEBUG MODE: vidi terminal za sve detekcije",
                 "entry": entry,
                 "sl": sl,
                 "tp": tp
@@ -133,5 +143,5 @@ def analyze_market(symbol, timeframe):
         return None
 
     except Exception as e:
-        print("Greška u analizi (retry mode):", str(e))
+        print("Greška u analizi (debug):", str(e))
         return None
