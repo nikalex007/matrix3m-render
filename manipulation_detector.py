@@ -4,14 +4,15 @@ import time
 
 BINANCE_BASE_URL = "https://api.binance.com"
 
-def get_klines(symbol, interval, limit=30, retries=2):
+def get_klines(symbol, interval, limit=30, retries=5):
     url = f"{BINANCE_BASE_URL}/api/v3/klines"
     params = {"symbol": symbol, "interval": interval, "limit": limit}
-    for _ in range(retries):
+    for attempt in range(1, retries + 1):
         response = requests.get(url, params=params)
         klines = response.json()
         if isinstance(klines, list) and len(klines) >= 12:
             return klines
+        print(f"⚠️ Pokušaj {attempt}: stiglo samo {len(klines)} sveća za {symbol}")
         time.sleep(3)
     return []
 
@@ -98,7 +99,7 @@ def analyze_market(symbol, timeframe):
     try:
         klines = get_klines(symbol, timeframe, limit=30)
         if not klines or len(klines) < 12:
-            print("⚠️ Nedovoljno podataka iz klines za", symbol)
+            print(f"⚠️ Nedovoljno podataka iz klines za {symbol} – stiglo {len(klines)} sveća")
             return None
 
         spoof = detect_spoofing(symbol)
@@ -143,5 +144,5 @@ def analyze_market(symbol, timeframe):
         return None
 
     except Exception as e:
-        print("Greška u analizi (debug):", str(e))
+        print("Greška u analizi (retry + log):", str(e))
         return None
