@@ -4,7 +4,7 @@ from telegram_notifier import send_telegram_message
 from datetime import datetime, timedelta
 import time
 
-debug_mode = True  # <=== OVO JE KLJUČNO!
+debug_mode = True  # <=== KLJUČNO za logovanje
 
 keep_alive()
 send_telegram_message("✅ Matrix3M bot je pokrenut. Aktivna analiza BTCUSDT na 1m timeframe-u.")
@@ -58,12 +58,12 @@ Napomena: {napomena}"""
                 print(f"⛔ Nema signala za {symbol} / {tf}")
 
     if datetime.now() - last_status >= timedelta(hours=2):
-        msg = "⏳ Matrix3M bot je aktivan, ali još nema signala. (1m TF)"
-        print(msg) if debug_mode else None
-        send_telegram_message(msg)
+        msg_stat = "⏳ Matrix3M bot je aktivan, ali još nema validnih signala. Pratim BTCUSDT na 1m..."
+        if debug_mode:
+            print(msg_stat)
+        send_telegram_message(msg_stat)
         last_status = datetime.now()
 
     if debug_mode:
-        print("🕒 Spavanje 30 sekundi...\n")
+        print("🕒 Spavanje 30s...\n")
     time.sleep(30)
-# verzija: debug_aktivan_1031
