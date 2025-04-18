@@ -1,16 +1,13 @@
+# === CEO main.py DEBUG verzija ===
 from keep_alive import keep_alive
 from manipulation_detector import analyze_market
 from telegram_notifier import send_telegram_message
 from datetime import datetime, timedelta
 import time
 
-# 🔧 Debug režim: True = prikazuje sve u log
-debug_mode = True
+debug_mode = True  # OVDE AKTIVIRAMO DEBUG
 
-# Aktivacija servera
 keep_alive()
-
-# Početna poruka
 send_telegram_message("✅ Matrix3M bot je pokrenut. Aktivna analiza BTCUSDT na 1m timeframe-u.")
 
 symbol = "BTCUSDT"
@@ -62,9 +59,9 @@ Napomena: {napomena}"""
                 print(f"⛔ Nema signala za {symbol} / {tf}")
 
     if datetime.now() - last_status >= timedelta(hours=2):
-        ping_msg = "⏳ Matrix3M bot je aktivan, ali još nema signala (1m TF). Pratim tržište..."
-        print(ping_msg) if debug_mode else None
-        send_telegram_message(ping_msg)
+        msg = "⏳ Matrix3M bot je aktivan, ali još nema signala. (1m TF)"
+        print(msg) if debug_mode else None
+        send_telegram_message(msg)
         last_status = datetime.now()
 
     if debug_mode:
