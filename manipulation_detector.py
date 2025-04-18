@@ -23,8 +23,6 @@ def analyze_market(symbol, interval):
         print(f"⛔ Nema dovoljno podataka za {symbol} / {interval}")
         return None
 
-    print(f"🔍 Broj sveća za analizu: {len(klines)}")
-
     candles = [{
         'open': float(k[1]),
         'high': float(k[2]),
@@ -34,7 +32,7 @@ def analyze_market(symbol, interval):
     } for k in klines]
 
     last = candles[-1]
-    prev = candles[-2] if len(candles) >= 2 else last
+    prev = candles[-2]
 
     findings = []
 
@@ -51,12 +49,10 @@ def analyze_market(symbol, interval):
         print("✅ Imbalance Spike detektovan")
 
     if len(candles) >= 5:
-        recent_highs = [c['high'] for c in candles[-5:-1]]
-        recent_lows = [c['low'] for c in candles[-5:-1]]
-        if last['close'] > max(recent_highs):
+        if last['close'] > max(c['high'] for c in candles[-5:-1]):
             findings.append("CHoCH Break")
             print("✅ CHoCH Break (bullish)")
-        elif last['close'] < min(recent_lows):
+        elif last['close'] < min(c['low'] for c in candles[-5:-1]):
             findings.append("CHoCH Break")
             print("✅ CHoCH Break (bearish)")
 
@@ -74,11 +70,10 @@ def analyze_market(symbol, interval):
         print("✅ Momentum Breakout (bearish)")
 
     if findings:
-        napomena = "🧪 Partial Data Analysis" if len(candles) < 10 else "⚠️ Signal baziran na agresivnoj sveći"
         return {
             "setup": " + ".join(findings),
-            "verovatnoća": 85 if len(findings) >= 3 else 65,
-            "napomena": napomena,
+            "verovatnoća": 90 if len(findings) >= 3 else 75 if len(findings) == 2 else 60,
+            "napomena": "⚠️ Greedy mod: signal aktivan i sa 1 manipulacijom",
             "entry": round(last['close'], 2),
             "sl": round(last['low'] if last['close'] > last['open'] else last['high'], 2),
             "tp": round(last['close'] * 1.01 if last['close'] > last['open'] else last['close'] * 0.99, 2)
