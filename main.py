@@ -32,7 +32,7 @@ while True:
             tp = signal.get('tp', 'N/A')
 
             active = setup.split('+') if '+' in setup else [setup]
-            all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick"]
+            all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick", "Momentum Breakout"]
             manip_list = []
             for m in all_manips:
                 if any(m.lower() in a.lower() for a in active):
@@ -46,7 +46,7 @@ while True:
             msg = f"""🎯 SIGNAL AKTIVAN
 Symbol: {symbol} [{tf}]
 Manipulacije: {manip_summary}
-Ukupno: {len(active)}/5 → {tag}
+Ukupno: {len(active)}/6 → {tag}
 Setup: {setup}
 Verovatnoća: {verovatnoca}%
 Entry: {entry}
@@ -58,7 +58,7 @@ Napomena: {napomena}"""
             send_telegram_message(msg)
         else:
             if debug_mode:
-                print(f"⛔ Nema signala za {symbol} / {tf}")
+                print(f"⚠️ Nema validnih podataka ili signala za {symbol} / {tf}")
 
     if datetime.now() - last_status >= timedelta(hours=2):
         msg_stat = "⏳ Matrix3M bot je aktivan, ali još nema validnih signala. Pratim BTCUSDT na 1m..."
