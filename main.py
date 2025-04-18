@@ -4,14 +4,14 @@ from telegram_notifier import send_telegram_message
 from datetime import datetime, timedelta
 import time
 
-# Debug mod (True = piše sve u log, False = piše samo signale)
-debug_mode = False
+# 🔧 Debug režim: True = prikazuje sve u log
+debug_mode = True
 
-# Aktiviraj web server
+# Aktivacija servera
 keep_alive()
 
 # Početna poruka
-send_telegram_message("✅ Matrix3M bot je aktiviran i analizira BTCUSDT isključivo na 1m timeframe-u.")
+send_telegram_message("✅ Matrix3M bot je pokrenut. Aktivna analiza BTCUSDT na 1m timeframe-u.")
 
 symbol = "BTCUSDT"
 timeframes = ["1m"]
@@ -21,6 +21,7 @@ while True:
     for tf in timeframes:
         if debug_mode:
             print(f"📊 Proveravam: {symbol} / {tf}")
+
         signal = analyze_market(symbol, tf)
 
         if signal:
@@ -58,14 +59,14 @@ Napomena: {napomena}"""
             send_telegram_message(msg)
         else:
             if debug_mode:
-                print(f"⚠️ Nema validnih podataka ili signala za {symbol} / {tf}")
+                print(f"⛔ Nema signala za {symbol} / {tf}")
 
     if datetime.now() - last_status >= timedelta(hours=2):
-        msg_stat = "⏳ Matrix3M bot je aktivan, ali još nema validnih signala. Pratim BTCUSDT na 1m..."
-        print(msg_stat) if debug_mode else None
-        send_telegram_message(msg_stat)
+        ping_msg = "⏳ Matrix3M bot je aktivan, ali još nema signala (1m TF). Pratim tržište..."
+        print(ping_msg) if debug_mode else None
+        send_telegram_message(ping_msg)
         last_status = datetime.now()
 
     if debug_mode:
-        print("🕒 Spavanje 30s...\n")
+        print("🕒 Spavanje 30 sekundi...\n")
     time.sleep(30)
