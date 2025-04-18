@@ -10,7 +10,7 @@ debug_mode = True
 # Pokreni web server (za Replit i Render ping)
 keep_alive()
 
-# Prva poruka
+# Početna poruka
 send_telegram_message("✅ Matrix3M bot je pokrenut i aktivan. Pratim BTCUSDT na 1m (Greedy + Fallback mod).")
 
 symbol = "BTCUSDT"
@@ -57,11 +57,15 @@ Napomena: {napomena}"""
 
             print(msg)
             send_telegram_message(msg)
+
+            # Resetujemo last_status ako je signal poslat
+            last_status = datetime.now()
+
         else:
             if debug_mode:
                 print(f"⛔ Nema signala za {symbol} / {tf}")
 
-    # Ping svakih 2 sata ako ćuti
+    # Ping svakih 2h ako nema signala
     if datetime.now() - last_status >= timedelta(hours=2):
         ping_msg = "⏳ Matrix3M aktivan, ali još nema signala. Pratim BTCUSDT na 1m..."
         print(ping_msg)
