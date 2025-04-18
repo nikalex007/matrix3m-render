@@ -47,18 +47,22 @@ def analyze_market(symbol, interval):
 
     findings = []
 
+    # Spoofing
     if last['volume'] > 3 * prev['volume']:
         findings.append("Spoofing")
         print("✅ Spoofing detektovan")
 
+    # Delta Flip
     if abs(last['close'] - last['open']) > abs(prev['close'] - prev['open']) * 2:
         findings.append("Delta Flip")
         print("✅ Delta Flip detektovan")
 
+    # Imbalance Spike
     if (last['high'] - last['low']) > 2 * (prev['high'] - prev['low']):
         findings.append("Imbalance Spike")
         print("✅ Imbalance Spike detektovan")
 
+    # CHoCH Break
     if len(candles) >= 5:
         highs = [c['high'] for c in candles[-5:-1]]
         lows = [c['low'] for c in candles[-5:-1]]
@@ -69,12 +73,14 @@ def analyze_market(symbol, interval):
             findings.append("CHoCH Break")
             print("✅ CHoCH Break (bearish)")
 
+    # Trap Wick
     wick = last['high'] - last['low']
     body = abs(last['close'] - last['open'])
     if wick > body * 3:
         findings.append("Trap Wick")
         print("✅ Trap Wick detektovan")
 
+    # Momentum Breakout
     if (last['close'] > last['open']) and (last['close'] > prev['high']) and (prev['close'] > before_prev['high']):
         findings.append("Momentum Breakout")
         print("✅ Momentum Breakout (bullish)")
@@ -86,7 +92,7 @@ def analyze_market(symbol, interval):
         return {
             "setup": " + ".join(sorted(findings)),
             "verovatnoća": 90 if len(findings) >= 3 else 75 if len(findings) == 2 else 60,
-            "napomena": "⚠️ Kombinovani fallback + greedy mod: analiza zadnje 3 sveće",
+            "napomena": "⚠️ Fallback + Greedy mod aktivan – analiza poslednje sveće",
             "entry": round(last['close'], 2),
             "sl": round(last['low'] if last['close'] > last['open'] else last['high'], 2),
             "tp": round(last['close'] * 1.01 if last['close'] > last['open'] else last['close'] * 0.99, 2)
