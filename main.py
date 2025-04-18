@@ -4,47 +4,44 @@ from telegram_notifier import send_telegram_message
 from datetime import datetime, timedelta
 import time
 
-# Debug mod aktiviran
 debug_mode = True
-
-# Pokreni web server (za Replit i Render ping)
 keep_alive()
 
-# Početna poruka
-send_telegram_message("✅ Matrix3M bot je pokrenut i aktivan. Pratim BTCUSDT na 1m (Greedy + Fallback mod).")
+send_telegram_message("✅ Matrix3M bot pokrenut. Aktivni simboli: BTCUSDT, ETHUSDT na 1m (Greedy + Fallback mod).")
 
-symbol = "BTCUSDT"
+symbols = ["BTCUSDT", "ETHUSDT"]
 timeframes = ["1m"]
 last_status = datetime.now()
 
 while True:
-    for tf in timeframes:
-        if debug_mode:
-            print(f"📊 Proveravam: {symbol} / {tf}")
+    for symbol in symbols:
+        for tf in timeframes:
+            if debug_mode:
+                print(f"📊 Proveravam: {symbol} / {tf}")
 
-        signal = analyze_market(symbol, tf)
+            signal = analyze_market(symbol, tf)
 
-        if signal:
-            setup = signal.get('setup', 'Nepoznat setup')
-            verovatnoca = signal.get('verovatnoća', 'N/A')
-            napomena = signal.get('napomena', '')
-            entry = signal.get('entry', 'N/A')
-            sl = signal.get('sl', 'N/A')
-            tp = signal.get('tp', 'N/A')
+            if signal:
+                setup = signal.get('setup', 'Nepoznat setup')
+                verovatnoca = signal.get('verovatnoća', 'N/A')
+                napomena = signal.get('napomena', '')
+                entry = signal.get('entry', 'N/A')
+                sl = signal.get('sl', 'N/A')
+                tp = signal.get('tp', 'N/A')
 
-            active = setup.split('+') if '+' in setup else [setup]
-            all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick", "Momentum Breakout"]
-            manip_list = []
-            for m in all_manips:
-                if any(m.lower() in a.lower() for a in active):
-                    manip_list.append(f"[x] {m}")
-                else:
-                    manip_list.append(f"[ ] {m}")
-            manip_summary = ', '.join(manip_list)
+                active = setup.split('+') if '+' in setup else [setup]
+                all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick", "Momentum Breakout"]
+                manip_list = []
+                for m in all_manips:
+                    if any(m.lower() in a.lower() for a in active):
+                        manip_list.append(f"[x] {m}")
+                    else:
+                        manip_list.append(f"[ ] {m}")
+                manip_summary = ', '.join(manip_list)
 
-            tag = "✅ SIGNAL POSLAT" if len(active) >= 2 else "🟡 SLAB SIGNAL – Posmatrati"
+                tag = "✅ SIGNAL POSLAT" if len(active) >= 2 else "🟡 SLAB SIGNAL – Posmatrati"
 
-            msg = f"""🎯 SIGNAL AKTIVAN
+                msg = f"""🎯 SIGNAL AKTIVAN
 Symbol: {symbol} [{tf}]
 Manipulacije: {manip_summary}
 Ukupno: {len(active)}/{len(all_manips)} → {tag}
@@ -55,19 +52,16 @@ SL: {sl}
 TP: {tp}
 Napomena: {napomena}"""
 
-            print(msg)
-            send_telegram_message(msg)
+                print(msg)
+                send_telegram_message(msg)
+                last_status = datetime.now()
 
-            # Resetujemo last_status ako je signal poslat
-            last_status = datetime.now()
+            else:
+                if debug_mode:
+                    print(f"⛔ Nema signala za {symbol} / {tf}")
 
-        else:
-            if debug_mode:
-                print(f"⛔ Nema signala za {symbol} / {tf}")
-
-    # Ping svakih 2h ako nema signala
     if datetime.now() - last_status >= timedelta(hours=2):
-        ping_msg = "⏳ Matrix3M aktivan, ali još nema signala. Pratim BTCUSDT na 1m..."
+        ping_msg = "⏳ Matrix3M aktivan, ali nema još validnih signala (BTC/ETH, 1m)..."
         print(ping_msg)
         send_telegram_message(ping_msg)
         last_status = datetime.now()
