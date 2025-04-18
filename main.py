@@ -1,11 +1,10 @@
-# === CEO main.py DEBUG verzija ===
 from keep_alive import keep_alive
 from manipulation_detector import analyze_market
 from telegram_notifier import send_telegram_message
 from datetime import datetime, timedelta
 import time
 
-debug_mode = True  # OVDE AKTIVIRAMO DEBUG
+debug_mode = True  # <=== OVO JE KLJUČNO!
 
 keep_alive()
 send_telegram_message("✅ Matrix3M bot je pokrenut. Aktivna analiza BTCUSDT na 1m timeframe-u.")
