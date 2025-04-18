@@ -19,14 +19,7 @@ while True:
             if debug_mode:
                 print(f"📊 Proveravam: {symbol} / {tf}")
 
-            # Retry sistem (do 5 pokušaja ako podaci nisu stigli)
-            signal = None
-            for attempt in range(5):
-                signal = analyze_market(symbol, tf)
-                if signal is not None:
-                    break
-                print(f"⚠️ Pokušaj {attempt+1}: stiglo premalo podataka za {symbol} / {tf}")
-                time.sleep(15)
+            signal = analyze_market(symbol, tf)
 
             if signal:
                 setup = signal.get('setup', 'Nepoznat setup')
