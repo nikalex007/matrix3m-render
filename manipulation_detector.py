@@ -3,17 +3,27 @@ import statistics
 
 BINANCE_BASE_URL = "https://api.binance.com"
 
-def get_klines(symbol, interval, limit=10):
+def get_klines(symbol, interval, limit=50):
     url = f"{BINANCE_BASE_URL}/api/v3/klines"
     params = {"symbol": symbol, "interval": interval, "limit": limit}
-    response = requests.get(url, params=params)
-    return response.json()
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"⛔ Greška pri dohvatanju klines za {symbol}: {str(e)}")
+        return []
 
 def get_orderbook(symbol, limit=10):
     url = f"{BINANCE_BASE_URL}/api/v3/depth"
     params = {"symbol": symbol, "limit": limit}
-    response = requests.get(url, params=params)
-    return response.json()
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"⛔ Greška u order book za {symbol}: {str(e)}")
+        return {"bids": [], "asks": []}
 
 def detect_spoofing(symbol):
     ob = get_orderbook(symbol)
@@ -31,8 +41,8 @@ def detect_delta_flip(klines):
     return any(v > avg * 2 for v in recent)
 
 def detect_imbalance(klines):
-    imbalances = []
-    for k in klines:
+    imbalances = 0
+    for k in klines[-10:]:
         open_price = float(k[1])
         close_price = float(k[4])
         high = float(k[2])
@@ -40,8 +50,8 @@ def detect_imbalance(klines):
         spread = high - low
         body = abs(close_price - open_price)
         if spread > 0 and body / spread < 0.2:
-            imbalances.append(True)
-    return len(imbalances) >= 3
+            imbalances += 1
+    return imbalances >= 3
 
 def detect_choc(klines):
     if len(klines) < 5:
@@ -65,9 +75,10 @@ def detect_trap_wick(klines):
 
 def analyze_market(symbol, timeframe):
     try:
-        klines = get_klines(symbol, timeframe, limit=10)
-        if not klines or len(klines) < 5:
-            print(f"❌ Nedovoljno podataka za {symbol} / {timeframe}")
+        klines = get_klines(symbol, timeframe, limit=50)
+
+        if not klines or len(klines) < 30:
+            print(f"⚠️ Nedovoljno podataka za {symbol} / {timeframe}")
             return None
 
         spoof = detect_spoofing(symbol)
@@ -88,6 +99,7 @@ def analyze_market(symbol, timeframe):
             entry = round(last_close, 2)
             sl = round(entry * 0.995, 2)
             tp = round(entry * 1.015, 2)
+
             return {
                 "setup": " + ".join(setup),
                 "verovatnoća": 70 + len(setup) * 5,
@@ -100,5 +112,5 @@ def analyze_market(symbol, timeframe):
         return None
 
     except Exception as e:
-        print("Greška u analizi:", str(e))
+        print(f"⛔ Greška u analizi {symbol}: {str(e)}")
         return None
