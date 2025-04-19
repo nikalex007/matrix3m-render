@@ -5,7 +5,8 @@ import os
 
 load_dotenv()
 
-BINANCE_BASE_URL = "https://api.binance.com"
+BINANCE_BASE_URL = "https://fapi.binance.com"
+
 
 def get_klines(symbol, interval, limit=10):
     url = f"{BINANCE_BASE_URL}/api/v3/klines"
