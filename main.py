@@ -7,7 +7,7 @@ import time
 debug_mode = True
 keep_alive()
 
-send_telegram_message("✅ Matrix3M bot pokrenut. Aktivni simboli: BTCUSDT, ETHUSDT na 1m (Greedy + Fallback mod).")
+send_telegram_message("✅ Matrix3M bot pokrenut. Pratim BTCUSDT i ETHUSDT na 1m (Greedy + Fallback mod).")
 
 symbols = ["BTCUSDT", "ETHUSDT"]
 timeframes = ["1m"]
@@ -55,7 +55,6 @@ Napomena: {napomena}"""
                 print(msg)
                 send_telegram_message(msg)
                 last_status = datetime.now()
-
             else:
                 if debug_mode:
                     print(f"⛔ Nema signala za {symbol} / {tf}")
@@ -67,5 +66,5 @@ Napomena: {napomena}"""
         last_status = datetime.now()
 
     if debug_mode:
-        print("🕒 Spavanje 30s...\n")
-    time.sleep(30)
+        print("🕒 Spavanje 60s...\n")
+    time.sleep(60)
