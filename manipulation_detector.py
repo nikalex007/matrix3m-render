@@ -1,102 +1,104 @@
 import requests
-import time
+import statistics
 
-# Globalni keš
-cached_klines = {}
+BINANCE_BASE_URL = "https://api.binance.com"
 
-def get_klines(symbol, interval, limit=10, retries=5, delay=1):
-    url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
-    for attempt in range(retries):
-        try:
-            response = requests.get(url, timeout=5)
-            data = response.json()
-            if isinstance(data, list) and len(data) >= 3:
-                cached_klines[(symbol, interval)] = data  # ažuriraj keš
-                return data
-            else:
-                print(f"⚠️ Pokušaj {attempt+1}: stiglo samo {len(data)} sveća za {symbol}")
-        except Exception as e:
-            print(f"❌ Greška pri dohvatu klines (pokušaj {attempt+1}): {e}")
-        time.sleep(delay)
+def get_klines(symbol, interval, limit=10):
+    url = f"{BINANCE_BASE_URL}/api/v3/klines"
+    params = {"symbol": symbol, "interval": interval, "limit": limit}
+    response = requests.get(url, params=params)
+    return response.json()
 
-    # Ako nismo uspeli, koristi fallback
-    if (symbol, interval) in cached_klines:
-        print("♻️ Koristim keširane sveće (fallback)")
-        return cached_klines[(symbol, interval)]
-    else:
-        print("⛔ Nedovoljno podataka ni za fallback")
-        return []
+def get_orderbook(symbol, limit=10):
+    url = f"{BINANCE_BASE_URL}/api/v3/depth"
+    params = {"symbol": symbol, "limit": limit}
+    response = requests.get(url, params=params)
+    return response.json()
 
-def analyze_market(symbol, interval):
-    klines = get_klines(symbol, interval, limit=10)
-    if not klines or len(klines) < 3:
-        print(f"⛔ Nema dovoljno podataka za {symbol} / {interval}")
+def detect_spoofing(symbol):
+    ob = get_orderbook(symbol)
+    bids = sum(float(b[1]) for b in ob['bids'])
+    asks = sum(float(a[1]) for a in ob['asks'])
+    ratio = bids / asks if asks > 0 else 0
+    return ratio > 3 or ratio < 0.33
+
+def detect_delta_flip(klines):
+    volumes = [float(k[5]) for k in klines]
+    if len(volumes) < 5:
+        return False
+    recent = volumes[-3:]
+    avg = statistics.mean(volumes[:-3])
+    return any(v > avg * 2 for v in recent)
+
+def detect_imbalance(klines):
+    imbalances = []
+    for k in klines:
+        open_price = float(k[1])
+        close_price = float(k[4])
+        high = float(k[2])
+        low = float(k[3])
+        spread = high - low
+        body = abs(close_price - open_price)
+        if spread > 0 and body / spread < 0.2:
+            imbalances.append(True)
+    return len(imbalances) >= 3
+
+def detect_choc(klines):
+    if len(klines) < 5:
+        return False
+    prev_high = float(klines[-5][2])
+    curr_high = float(klines[-1][2])
+    return curr_high > prev_high
+
+def detect_trap_wick(klines):
+    traps = 0
+    for k in klines[-10:]:
+        high = float(k[2])
+        low = float(k[3])
+        open_price = float(k[1])
+        close = float(k[4])
+        wick_up = high - max(open_price, close)
+        wick_down = min(open_price, close) - low
+        if wick_up > wick_down * 2 or wick_down > wick_up * 2:
+            traps += 1
+    return traps >= 3
+
+def analyze_market(symbol, timeframe):
+    try:
+        klines = get_klines(symbol, timeframe, limit=10)
+        if not klines or len(klines) < 5:
+            print(f"❌ Nedovoljno podataka za {symbol} / {timeframe}")
+            return None
+
+        spoof = detect_spoofing(symbol)
+        delta = detect_delta_flip(klines)
+        imbalance = detect_imbalance(klines)
+        choc = detect_choc(klines)
+        wick = detect_trap_wick(klines)
+
+        setup = []
+        if spoof: setup.append("Spoofing")
+        if delta: setup.append("Delta Flip")
+        if imbalance: setup.append("Imbalance Spike")
+        if choc: setup.append("CHoCH Break")
+        if wick: setup.append("Trap Wick")
+
+        if len(setup) >= 1:
+            last_close = float(klines[-1][4])
+            entry = round(last_close, 2)
+            sl = round(entry * 0.995, 2)
+            tp = round(entry * 1.015, 2)
+            return {
+                "setup": " + ".join(setup),
+                "verovatnoća": 70 + len(setup) * 5,
+                "napomena": "Real-time manipulacije detektovane",
+                "entry": entry,
+                "sl": sl,
+                "tp": tp
+            }
+
         return None
 
-    candles = [{
-        'open': float(k[1]),
-        'high': float(k[2]),
-        'low': float(k[3]),
-        'close': float(k[4]),
-        'volume': float(k[5])
-    } for k in klines]
-
-    last = candles[-1]
-    prev = candles[-2]
-    before_prev = candles[-3]
-
-    findings = []
-
-    # Spoofing
-    if last['volume'] > 3 * prev['volume']:
-        findings.append("Spoofing")
-        print("✅ Spoofing detektovan")
-
-    # Delta Flip
-    if abs(last['close'] - last['open']) > abs(prev['close'] - prev['open']) * 2:
-        findings.append("Delta Flip")
-        print("✅ Delta Flip detektovan")
-
-    # Imbalance Spike
-    if (last['high'] - last['low']) > 2 * (prev['high'] - prev['low']):
-        findings.append("Imbalance Spike")
-        print("✅ Imbalance Spike detektovan")
-
-    # CHoCH Break
-    if len(candles) >= 5:
-        highs = [c['high'] for c in candles[-5:-1]]
-        lows = [c['low'] for c in candles[-5:-1]]
-        if last['close'] > max(highs):
-            findings.append("CHoCH Break")
-            print("✅ CHoCH Break (bullish)")
-        elif last['close'] < min(lows):
-            findings.append("CHoCH Break")
-            print("✅ CHoCH Break (bearish)")
-
-    # Trap Wick
-    wick = last['high'] - last['low']
-    body = abs(last['close'] - last['open'])
-    if wick > body * 3:
-        findings.append("Trap Wick")
-        print("✅ Trap Wick detektovan")
-
-    # Momentum Breakout
-    if (last['close'] > last['open']) and (last['close'] > prev['high']) and (prev['close'] > before_prev['high']):
-        findings.append("Momentum Breakout")
-        print("✅ Momentum Breakout (bullish)")
-    elif (last['close'] < last['open']) and (last['close'] < prev['low']) and (prev['close'] < before_prev['low']):
-        findings.append("Momentum Breakout")
-        print("✅ Momentum Breakout (bearish)")
-
-    if findings:
-        return {
-            "setup": " + ".join(sorted(findings)),
-            "verovatnoća": 90 if len(findings) >= 3 else 75 if len(findings) == 2 else 60,
-            "napomena": "⚠️ Fallback + Greedy mod aktivan – analiza poslednje sveće",
-            "entry": round(last['close'], 2),
-            "sl": round(last['low'] if last['close'] > last['open'] else last['high'], 2),
-            "tp": round(last['close'] * 1.01 if last['close'] > last['open'] else last['close'] * 0.99, 2)
-        }
-    else:
-        print(f"❌ Nema manipulacija u {symbol} / {interval}")
+    except Exception as e:
+        print("Greška u analizi:", str(e))
         return None
