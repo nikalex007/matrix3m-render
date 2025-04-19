@@ -1,24 +1,14 @@
 import requests
 import statistics
-from dotenv import load_dotenv
-import os
 
-# Učitaj API ključeve iz .env fajla
-load_dotenv()
-BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")
-BINANCE_SECRET_KEY = os.getenv("BINANCE_SECRET_KEY")
-
-BINANCE_BASE_URL = "https://api.binance.com"
-
-headers = {
-    "X-MBX-APIKEY": BINANCE_API_KEY
-}
+# ✅ Futures endpoint!
+BINANCE_BASE_URL = "https://fapi.binance.com"
 
 def get_klines(symbol, interval, limit=50):
-    url = f"{BINANCE_BASE_URL}/api/v3/klines"
+    url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
     params = {"symbol": symbol, "interval": interval, "limit": limit}
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -26,10 +16,10 @@ def get_klines(symbol, interval, limit=50):
         return []
 
 def get_orderbook(symbol, limit=10):
-    url = f"{BINANCE_BASE_URL}/api/v3/depth"
+    url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
     params = {"symbol": symbol, "limit": limit}
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=5)
+        response = requests.get(url, params=params, timeout=5)
         response.raise_for_status()
         return response.json()
     except Exception as e:
