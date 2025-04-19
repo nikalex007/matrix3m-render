@@ -1,11 +1,14 @@
 import requests
 import statistics
+from dotenv import load_dotenv
+import os
 
-# ✅ Futures endpoint!
-BINANCE_BASE_URL = "https://fapi.binance.com"
+load_dotenv()
 
-def get_klines(symbol, interval, limit=50):
-    url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
+BINANCE_BASE_URL = "https://api.binance.com"
+
+def get_klines(symbol, interval, limit=10):
+    url = f"{BINANCE_BASE_URL}/api/v3/klines"
     params = {"symbol": symbol, "interval": interval, "limit": limit}
     try:
         response = requests.get(url, params=params, timeout=10)
@@ -16,7 +19,7 @@ def get_klines(symbol, interval, limit=50):
         return []
 
 def get_orderbook(symbol, limit=10):
-    url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
+    url = f"{BINANCE_BASE_URL}/api/v3/depth"
     params = {"symbol": symbol, "limit": limit}
     try:
         response = requests.get(url, params=params, timeout=5)
@@ -31,28 +34,28 @@ def detect_spoofing(symbol):
     bids = sum(float(b[1]) for b in ob['bids'])
     asks = sum(float(a[1]) for a in ob['asks'])
     ratio = bids / asks if asks > 0 else 0
-    return ratio > 3 or ratio < 0.33
+    return ratio > 2.5 or ratio < 0.4  # oslabljen prag
 
 def detect_delta_flip(klines):
     volumes = [float(k[5]) for k in klines]
     if len(volumes) < 5:
         return False
     recent = volumes[-3:]
-    avg = statistics.mean(volumes[:-3])
-    return any(v > avg * 2 for v in recent)
+    avg = statistics.mean(volumes[:-3]) if len(volumes) > 3 else statistics.mean(volumes)
+    return any(v > avg * 1.8 for v in recent)
 
 def detect_imbalance(klines):
     imbalances = 0
-    for k in klines[-10:]:
+    for k in klines[-6:]:
         open_price = float(k[1])
         close_price = float(k[4])
         high = float(k[2])
         low = float(k[3])
         spread = high - low
         body = abs(close_price - open_price)
-        if spread > 0 and body / spread < 0.2:
+        if spread > 0 and body / spread < 0.25:
             imbalances += 1
-    return imbalances >= 3
+    return imbalances >= 2
 
 def detect_choc(klines):
     if len(klines) < 5:
@@ -63,22 +66,22 @@ def detect_choc(klines):
 
 def detect_trap_wick(klines):
     traps = 0
-    for k in klines[-10:]:
+    for k in klines[-6:]:
         high = float(k[2])
         low = float(k[3])
         open_price = float(k[1])
         close = float(k[4])
         wick_up = high - max(open_price, close)
         wick_down = min(open_price, close) - low
-        if wick_up > wick_down * 2 or wick_down > wick_up * 2:
+        if wick_up > wick_down * 1.8 or wick_down > wick_up * 1.8:
             traps += 1
-    return traps >= 3
+    return traps >= 2
 
 def analyze_market(symbol, timeframe):
     try:
-        klines = get_klines(symbol, timeframe, limit=50)
+        klines = get_klines(symbol, timeframe, limit=10)
 
-        if not klines or len(klines) < 30:
+        if not klines or len(klines) < 5:
             print(f"⚠️ Nedovoljno podataka za {symbol} / {timeframe}")
             return None
 
@@ -103,8 +106,8 @@ def analyze_market(symbol, timeframe):
 
             return {
                 "setup": " + ".join(setup),
-                "verovatnoća": 70 + len(setup) * 5,
-                "napomena": "Real-time manipulacije detektovane",
+                "verovatnoća": 65 + len(setup) * 4,
+                "napomena": "Greedy TEST mod aktivan",
                 "entry": entry,
                 "sl": sl,
                 "tp": tp
