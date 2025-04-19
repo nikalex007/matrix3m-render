@@ -7,7 +7,7 @@ import time
 debug_mode = True
 keep_alive()
 
-send_telegram_message("✅ Matrix3M bot pokrenut. Aktivni simboli: BTCUSDT, ETHUSDT na 1m i 5m (Greedy mod 1/6).")
+send_telegram_message("🚀 Matrix3M TEST MOD (0/6) aktiviran! Pratim BTCUSDT & ETHUSDT na 1m i 5m timeframe-u.")
 
 symbols = ["BTCUSDT", "ETHUSDT"]
 timeframes = ["1m", "5m"]
@@ -39,12 +39,13 @@ while True:
                         manip_list.append(f"[ ] {m}")
                 manip_summary = ', '.join(manip_list)
 
-                tag = "✅ SIGNAL POSLAT" if len(active) >= 1 else "🟡 SLAB SIGNAL – Posmatrati"
+                # 0/6 logika – svaki setup ide kao signal
+                tag = "🔴 TEST SIGNAL – ultra greedy mod"
 
-                msg = f"""🎯 SIGNAL AKTIVAN
+                msg = f"""🎯 {tag}
 Symbol: {symbol} [{tf}]
 Manipulacije: {manip_summary}
-Ukupno: {len(active)}/{len(all_manips)} → {tag}
+Ukupno: {len(active)}/{len(all_manips)}
 Setup: {setup}
 Verovatnoća: {verovatnoca}%
 Entry: {entry}
@@ -55,13 +56,13 @@ Napomena: {napomena}"""
                 print(msg)
                 send_telegram_message(msg)
                 last_status = datetime.now()
+
             else:
                 if debug_mode:
                     print(f"⛔ Nema signala za {symbol} / {tf}")
 
-    # Ping svakih 2 sata ako nema pozicije
     if datetime.now() - last_status >= timedelta(hours=2):
-        ping_msg = "⏳ Matrix3M aktivan, ali još nema signala. Pratim BTC/ETH na 1m i 5m..."
+        ping_msg = "⏳ Matrix3M aktivan u TEST MODU (0/6), ali još nema ni slabih signala."
         print(ping_msg)
         send_telegram_message(ping_msg)
         last_status = datetime.now()
