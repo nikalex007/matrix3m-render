@@ -4,14 +4,14 @@ from telegram_notifier import send_telegram_message
 from datetime import datetime, timedelta
 import time
 
-# Debug mod aktiviran
+# Debug mod (uključi/isključi logove)
 debug_mode = True
 
-# Start Flask keep-alive server (za Render ping)
+# Pokretanje web servera (za pingovanje)
 keep_alive()
 
-# Početna poruka
-send_telegram_message("✅ Matrix3M bot pokrenut. Pratim BTCUSDT na 1m / 5m (Greedy + Fallback mod).")
+# Startna poruka
+send_telegram_message("✅ Matrix3M bot je pokrenut. Pratim BTCUSDT (1m/5m) – Greedy mod aktivan.")
 
 symbol = "BTCUSDT"
 timeframes = ["1m", "5m"]
@@ -58,12 +58,11 @@ Napomena: {napomena}"""
             print(msg)
             send_telegram_message(msg)
             last_status = datetime.now()
-
         else:
             if debug_mode:
                 print(f"⛔ Nema signala za {symbol} / {tf}")
 
-    # Ping poruka na svaka 2h
+    # Ping poruka svakih 2h
     if datetime.now() - last_status >= timedelta(hours=2):
         ping_msg = "⏳ Matrix3M aktivan – još nema validnih signala za BTCUSDT."
         print(ping_msg)
