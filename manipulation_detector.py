@@ -7,6 +7,7 @@ load_dotenv()
 
 BINANCE_BASE_URL = "https://fapi.binance.com"
 
+
 def get_klines(symbol, interval, limit=50):
     url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
     params = {"symbol": symbol, "interval": interval, "limit": limit}
