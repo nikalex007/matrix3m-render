@@ -10,9 +10,8 @@ BINANCE_BASE_URL = "https://fapi.binance.com"
 def get_klines(symbol, interval, limit=50):
     url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
     params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
-    headers = {"X-MBX-APIKEY": os.getenv("BINANCE_API_KEY")}
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -22,9 +21,8 @@ def get_klines(symbol, interval, limit=50):
 def get_orderbook(symbol, limit=10):
     url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
     params = {"symbol": symbol.upper(), "limit": limit}
-    headers = {"X-MBX-APIKEY": os.getenv("BINANCE_API_KEY")}
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=5)
+        response = requests.get(url, params=params, timeout=5)
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -87,12 +85,13 @@ def analyze_market(symbol, timeframe):
             print(f"⚠️ Nedovoljno podataka za {symbol} / {timeframe}")
             return None
 
-        # GREEDY DETEKCIJE (svi moduli se pozivaju bez čekanja kombinacije)
         spoof = detect_spoofing(symbol)
         delta = detect_delta_flip(klines)
         imbalance = detect_imbalance(klines)
         choc = detect_choc(klines)
         wick = detect_trap_wick(klines)
+
+        print(f"🔍 DEBUG ({symbol} / {timeframe}) -> Spoof: {spoof}, Delta: {delta}, Imbalance: {imbalance}, CHoCH: {choc}, Trap: {wick}")
 
         setup = []
         if spoof: setup.append("Spoofing")
@@ -101,14 +100,15 @@ def analyze_market(symbol, timeframe):
         if choc: setup.append("CHoCH Break")
         if wick: setup.append("Trap Wick")
 
-        if len(setup) >= 1:  # Greedy – šalje signal čim ima 1+
+        # ✅ Greedy logika: ako postoji bar jedna manipulacija
+        if spoof or delta or imbalance or choc or wick:
             last_close = float(klines[-1][4])
             entry = round(last_close, 2)
             sl = round(entry * 0.995, 2)
             tp = round(entry * 1.015, 2)
 
             return {
-                "setup": " + ".join(setup),
+                "setup": " + ".join(setup) if setup else "Nepoznat setup",
                 "verovatnoća": 70 + len(setup) * 5,
                 "napomena": "Real-time manipulacije detektovane",
                 "entry": entry,
