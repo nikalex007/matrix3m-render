@@ -9,13 +9,9 @@ BINANCE_BASE_URL = "https://fapi.binance.com"
 
 def get_klines(symbol, interval, limit=50):
     url = f"{BINANCE_BASE_URL}/fapi/v3/klines"
-
     params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
-    headers = {
-        "X-MBX-APIKEY": os.getenv("BINANCE_API_KEY")
-    }
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -25,11 +21,8 @@ def get_klines(symbol, interval, limit=50):
 def get_orderbook(symbol, limit=10):
     url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
     params = {"symbol": symbol.upper(), "limit": limit}
-    headers = {
-        "X-MBX-APIKEY": os.getenv("BINANCE_API_KEY")
-    }
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=5)
+        response = requests.get(url, params=params, timeout=5)
         response.raise_for_status()
         return response.json()
     except Exception as e:
