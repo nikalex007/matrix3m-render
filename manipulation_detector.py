@@ -7,10 +7,9 @@ load_dotenv()
 
 BINANCE_BASE_URL = "https://fapi.binance.com"
 
-
 def get_klines(symbol, interval, limit=50):
     url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
-    params = {"symbol": symbol, "interval": interval, "limit": limit}
+    params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
     try:
         response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
@@ -21,7 +20,7 @@ def get_klines(symbol, interval, limit=50):
 
 def get_orderbook(symbol, limit=10):
     url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
-    params = {"symbol": symbol, "limit": limit}
+    params = {"symbol": symbol.upper(), "limit": limit}
     try:
         response = requests.get(url, params=params, timeout=5)
         response.raise_for_status()
