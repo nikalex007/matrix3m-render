@@ -8,7 +8,7 @@ load_dotenv()
 BINANCE_BASE_URL = "https://fapi.binance.com"
 
 def get_klines(symbol, interval, limit=50):
-    url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
+    url = f"{BINANCE_BASE_URL}/fapi/v3/klines"  # 🔄 PROMENJENO V1 -> V3
     params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
     try:
         response = requests.get(url, params=params, timeout=10)
@@ -19,7 +19,7 @@ def get_klines(symbol, interval, limit=50):
         return []
 
 def get_orderbook(symbol, limit=10):
-    url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
+    url = f"{BINANCE_BASE_URL}/fapi/v3/depth"  # 🔄 PREVENTIVNO V1 -> V3
     params = {"symbol": symbol.upper(), "limit": limit}
     try:
         response = requests.get(url, params=params, timeout=5)
@@ -91,8 +91,6 @@ def analyze_market(symbol, timeframe):
         choc = detect_choc(klines)
         wick = detect_trap_wick(klines)
 
-        print(f"🔍 DEBUG ({symbol} / {timeframe}) -> Spoof: {spoof}, Delta: {delta}, Imbalance: {imbalance}, CHoCH: {choc}, Trap: {wick}")
-
         setup = []
         if spoof: setup.append("Spoofing")
         if delta: setup.append("Delta Flip")
@@ -100,15 +98,14 @@ def analyze_market(symbol, timeframe):
         if choc: setup.append("CHoCH Break")
         if wick: setup.append("Trap Wick")
 
-        # ✅ Greedy logika: ako postoji bar jedna manipulacija
-        if spoof or delta or imbalance or choc or wick:
+        if len(setup) >= 1:
             last_close = float(klines[-1][4])
             entry = round(last_close, 2)
             sl = round(entry * 0.995, 2)
             tp = round(entry * 1.015, 2)
 
             return {
-                "setup": " + ".join(setup) if setup else "Nepoznat setup",
+                "setup": " + ".join(setup),
                 "verovatnoća": 70 + len(setup) * 5,
                 "napomena": "Real-time manipulacije detektovane",
                 "entry": entry,
