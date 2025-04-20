@@ -8,7 +8,7 @@ load_dotenv()
 BINANCE_BASE_URL = "https://fapi.binance.com"
 
 def get_klines(symbol, interval, limit=50):
-    url = f"{BINANCE_BASE_URL}/fapi/v3/klines"  # 🔄 PROMENJENO V1 -> V3
+    url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
     params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
     try:
         response = requests.get(url, params=params, timeout=10)
@@ -19,7 +19,7 @@ def get_klines(symbol, interval, limit=50):
         return []
 
 def get_orderbook(symbol, limit=10):
-    url = f"{BINANCE_BASE_URL}/fapi/v3/depth"  # 🔄 PREVENTIVNO V1 -> V3
+    url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
     params = {"symbol": symbol.upper(), "limit": limit}
     try:
         response = requests.get(url, params=params, timeout=5)
@@ -86,10 +86,19 @@ def analyze_market(symbol, timeframe):
             return None
 
         spoof = detect_spoofing(symbol)
+        print(f"🔍 Spoofing: {'✅' if spoof else '❌'}")
+
         delta = detect_delta_flip(klines)
+        print(f"🔍 Delta Flip: {'✅' if delta else '❌'}")
+
         imbalance = detect_imbalance(klines)
+        print(f"🔍 Imbalance Spike: {'✅' if imbalance else '❌'}")
+
         choc = detect_choc(klines)
+        print(f"🔍 CHoCH Break: {'✅' if choc else '❌'}")
+
         wick = detect_trap_wick(klines)
+        print(f"🔍 Trap Wick: {'✅' if wick else '❌'}")
 
         setup = []
         if spoof: setup.append("Spoofing")
@@ -98,11 +107,13 @@ def analyze_market(symbol, timeframe):
         if choc: setup.append("CHoCH Break")
         if wick: setup.append("Trap Wick")
 
-        if len(setup) >= 1:
+        if len(setup) >= 1:  # Greedy mod
             last_close = float(klines[-1][4])
             entry = round(last_close, 2)
             sl = round(entry * 0.995, 2)
             tp = round(entry * 1.015, 2)
+
+            print(f"📬 SIGNAL DETEKTOVAN: {setup}")
 
             return {
                 "setup": " + ".join(setup),
@@ -113,6 +124,7 @@ def analyze_market(symbol, timeframe):
                 "tp": tp
             }
 
+        print("⛔ Nema validnog setupa za signal.\n")
         return None
 
     except Exception as e:
