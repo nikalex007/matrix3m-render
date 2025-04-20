@@ -7,7 +7,7 @@ import time
 debug_mode = True
 keep_alive()
 
-send_telegram_message("✅ Matrix3M bot je pokrenut i aktivan. Pratim BTCUSDT na 1m/5m (FAPI endpoint, Greedy + Fallback mod).")
+send_telegram_message("✅ Matrix3M bot je pokrenut i aktivan. Pratim BTCUSDT na 1m i 5m (Binance Futures - FAPI).")
 
 symbol = "BTCUSDT"
 timeframes = ["1m", "5m"]
@@ -29,7 +29,7 @@ while True:
             tp = signal.get('tp', 'N/A')
 
             active = setup.split('+') if '+' in setup else [setup]
-            all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick", "Momentum Breakout"]
+            all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick"]
             manip_list = []
             for m in all_manips:
                 if any(m.lower() in a.lower() for a in active):
@@ -54,11 +54,12 @@ Napomena: {napomena}"""
             print(msg)
             send_telegram_message(msg)
             last_status = datetime.now()
+
         else:
             if debug_mode:
                 print(f"⛔ Nema signala za {symbol} / {tf}")
 
-    # Ping poruka na svaka 2 sata
+    # Ping ako 2 sata nema signala
     if datetime.now() - last_status >= timedelta(hours=2):
         ping_msg = "⏳ Matrix3M aktivan – još nema validnih signala za BTCUSDT."
         print(ping_msg)
@@ -66,5 +67,5 @@ Napomena: {napomena}"""
         last_status = datetime.now()
 
     if debug_mode:
-        print("🕒 Spavanje 30s...\n")
+        print("🕒 Spavanje 30 sekundi...\n")
     time.sleep(30)
