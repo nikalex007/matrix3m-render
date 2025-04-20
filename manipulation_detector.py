@@ -7,7 +7,7 @@ load_dotenv()
 
 BINANCE_BASE_URL = "https://fapi.binance.com"
 
-def get_klines(symbol, interval, limit=30):  # fallback na 30 da smanji šansu za 451
+def get_klines(symbol, interval, limit=50):
     url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
     params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
     try:
@@ -79,9 +79,9 @@ def detect_trap_wick(klines):
 
 def analyze_market(symbol, timeframe):
     try:
-        klines = get_klines(symbol, timeframe, limit=30)
+        klines = get_klines(symbol, timeframe, limit=50)
 
-        if not klines or len(klines) < 20:
+        if not klines or len(klines) < 30:
             print(f"⚠️ Nedovoljno podataka za {symbol} / {timeframe}")
             return None
 
@@ -107,7 +107,7 @@ def analyze_market(symbol, timeframe):
             return {
                 "setup": " + ".join(setup),
                 "verovatnoća": 70 + len(setup) * 5,
-                "napomena": "Real-time manipulacije detektovane",
+                "napomena": "Real-time manipulacije detektovane (Greedy mod)",
                 "entry": entry,
                 "sl": sl,
                 "tp": tp
