@@ -8,7 +8,8 @@ load_dotenv()
 BINANCE_BASE_URL = "https://fapi.binance.com"
 
 def get_klines(symbol, interval, limit=50):
-    url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
+    url = f"{BINANCE_BASE_URL}/fapi/v3/klines"
+
     params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
     headers = {
         "X-MBX-APIKEY": os.getenv("BINANCE_API_KEY")
