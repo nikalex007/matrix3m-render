@@ -7,15 +7,11 @@ load_dotenv()
 
 BINANCE_BASE_URL = "https://fapi.binance.com"
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Matrix3M Bot)"
-}
-
-def get_klines(symbol, interval, limit=50):
+def get_klines(symbol, interval, limit=30):  # fallback na 30 da smanji šansu za 451
     url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
     params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -26,7 +22,7 @@ def get_orderbook(symbol, limit=10):
     url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
     params = {"symbol": symbol.upper(), "limit": limit}
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=5)
+        response = requests.get(url, params=params, timeout=5)
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -83,9 +79,9 @@ def detect_trap_wick(klines):
 
 def analyze_market(symbol, timeframe):
     try:
-        klines = get_klines(symbol, timeframe, limit=50)
+        klines = get_klines(symbol, timeframe, limit=30)
 
-        if not klines or len(klines) < 30:
+        if not klines or len(klines) < 20:
             print(f"⚠️ Nedovoljno podataka za {symbol} / {timeframe}")
             return None
 
