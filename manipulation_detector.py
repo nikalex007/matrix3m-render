@@ -7,9 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ✅ NOVI FUNKCIONALNI BINANCE ENDPOINT
-BINANCE_BASE = "https://api-gateway.binance.com"
-
+BINANCE_BASE = "https://api-gateway.binance.com"  # Fallback endpoint koji radi
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
@@ -24,7 +22,11 @@ async def fetch_klines(session, symbol, interval, limit=50):
             if response.status != 200:
                 print(f"HTTP {response.status} za {url}")
                 return None
-            return await response.json()
+            data = await response.json()
+            if not data or len(data) == 0:
+                print(f"⚠️ Prazan odgovor za klines {symbol} / {interval}")
+                return None
+            return data
     except Exception as e:
         print(f"Greška pri fetch_klines: {e}")
         return None
@@ -89,9 +91,10 @@ async def analyze_market(symbol, interval):
             return {
                 "setup": ", ".join(setup),
                 "verovatnoća": "SREDNJA",
-                "napomena": "Korišćenje api-gateway + fake headers",
+                "napomena": "Fake headers + fallback endpoint",
                 "entry": float(klines[-1][4]) if klines else None,
                 "sl": None,
                 "tp": None
             }
+
         return None
