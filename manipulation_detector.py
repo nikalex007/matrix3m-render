@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BINANCE_BASE = "https://api-gateway.binance.com"
+BINANCE_BASE = "https://binance.me-futures.cc"  # Fallback mirror endpoint
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
@@ -21,9 +21,6 @@ async def fetch_klines(session, symbol, interval, limit=50):
         async with session.get(url, headers=HEADERS) as response:
             if response.status != 200:
                 print(f"HTTP {response.status} za {url}")
-                return None
-            if response.content_length == 0:
-                print(f"⚠️ Prazan odgovor (0B) za klines {symbol} / {interval}")
                 return None
             data = await response.json()
             if not data or len(data) == 0:
@@ -94,7 +91,7 @@ async def analyze_market(symbol, interval):
             return {
                 "setup": ", ".join(setup),
                 "verovatnoća": "SREDNJA",
-                "napomena": "Fake headers + API gateway endpoint",
+                "napomena": "Mirror endpoint + headers",
                 "entry": float(klines[-1][4]) if klines else None,
                 "sl": None,
                 "tp": None
