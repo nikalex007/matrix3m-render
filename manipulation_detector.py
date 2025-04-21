@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BINANCE_BASE = "https://api1.binance.cc"  # Alternativni endpoint
+# ✅ NOVI FUNKCIONALNI BINANCE ENDPOINT
+BINANCE_BASE = "https://api-gateway.binance.com"
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
@@ -87,7 +89,7 @@ async def analyze_market(symbol, interval):
             return {
                 "setup": ", ".join(setup),
                 "verovatnoća": "SREDNJA",
-                "napomena": "Fake headers + fallback endpoint",
+                "napomena": "Korišćenje api-gateway + fake headers",
                 "entry": float(klines[-1][4]) if klines else None,
                 "sl": None,
                 "tp": None
