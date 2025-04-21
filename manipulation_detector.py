@@ -1,38 +1,45 @@
-import requests
+import aiohttp
+import asyncio
 import statistics
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
 load_dotenv()
 
 BINANCE_BASE_URL = "https://fapi.binance.com"
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+}
 
-def get_klines(symbol, interval, limit=50):
-    url = f"{BINANCE_BASE_URL}/fapi/v3/klines"
-    params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
+async def fetch(session, url, params):
     try:
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-        return response.json()
+        async with session.get(url, headers=HEADERS, params=params, timeout=10) as resp:
+            if resp.status == 200:
+                return await resp.json()
+            else:
+                print(f"⛔ HTTP {resp.status} za {url}")
+                return None
     except Exception as e:
-        print(f"⛔ Greška pri dohvatanju klines za {symbol}: {str(e)}")
-        return []
+        print(f"⛔ Greška pri fetch-u {url}: {str(e)}")
+        return None
 
-def get_orderbook(symbol, limit=10):
-    url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
-    params = {"symbol": symbol.upper(), "limit": limit}
-    try:
-        response = requests.get(url, params=params, timeout=5)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        print(f"⛔ Greška u order book za {symbol}: {str(e)}")
-        return {"bids": [], "asks": []}
+async def get_klines(symbol, interval, limit=50):
+    async with aiohttp.ClientSession() as session:
+        url = f"{BINANCE_BASE_URL}/fapi/v1/klines"
+        params = {"symbol": symbol.upper(), "interval": interval, "limit": limit}
+        return await fetch(session, url, params)
 
-def detect_spoofing(symbol):
-    ob = get_orderbook(symbol)
-    bids = sum(float(b[1]) for b in ob['bids'])
-    asks = sum(float(a[1]) for a in ob['asks'])
+async def get_orderbook(symbol, limit=10):
+    async with aiohttp.ClientSession() as session:
+        url = f"{BINANCE_BASE_URL}/fapi/v1/depth"
+        params = {"symbol": symbol.upper(), "limit": limit}
+        return await fetch(session, url, params)
+
+def detect_spoofing(orderbook):
+    if not orderbook:
+        return False
+    bids = sum(float(b[1]) for b in orderbook['bids'])
+    asks = sum(float(a[1]) for a in orderbook['asks'])
     ratio = bids / asks if asks > 0 else 0
     return ratio > 3 or ratio < 0.33
 
@@ -77,44 +84,43 @@ def detect_trap_wick(klines):
             traps += 1
     return traps >= 3
 
-def analyze_market(symbol, timeframe):
-    try:
-        klines = get_klines(symbol, timeframe, limit=50)
+async def analyze_market(symbol, timeframe):
+    klines = await get_klines(symbol, timeframe)
+    orderbook = await get_orderbook(symbol)
 
-        if not klines or len(klines) < 30:
-            print(f"⚠️ Nedovoljno podataka za {symbol} / {timeframe}")
-            return None
-
-        spoof = detect_spoofing(symbol)
-        delta = detect_delta_flip(klines)
-        imbalance = detect_imbalance(klines)
-        choc = detect_choc(klines)
-        wick = detect_trap_wick(klines)
-
-        setup = []
-        if spoof: setup.append("Spoofing")
-        if delta: setup.append("Delta Flip")
-        if imbalance: setup.append("Imbalance Spike")
-        if choc: setup.append("CHoCH Break")
-        if wick: setup.append("Trap Wick")
-
-        if len(setup) >= 1:
-            last_close = float(klines[-1][4])
-            entry = round(last_close, 2)
-            sl = round(entry * 0.995, 2)
-            tp = round(entry * 1.015, 2)
-
-            return {
-                "setup": " + ".join(setup),
-                "verovatnoća": 70 + len(setup) * 5,
-                "napomena": "Real-time manipulacije detektovane",
-                "entry": entry,
-                "sl": sl,
-                "tp": tp
-            }
-
+    if not klines or len(klines) < 30:
+        print(f"⚠️ Nedovoljno podataka za {symbol} / {timeframe}")
         return None
 
-    except Exception as e:
-        print(f"⛔ Greška u analizi {symbol}: {str(e)}")
-        return None
+    spoof = detect_spoofing(orderbook)
+    delta = detect_delta_flip(klines)
+    imbalance = detect_imbalance(klines)
+    choc = detect_choc(klines)
+    wick = detect_trap_wick(klines)
+
+    setup = []
+    if spoof: setup.append("Spoofing")
+    if delta: setup.append("Delta Flip")
+    if imbalance: setup.append("Imbalance Spike")
+    if choc: setup.append("CHoCH Break")
+    if wick: setup.append("Trap Wick")
+
+    if len(setup) >= 1:
+        last_close = float(klines[-1][4])
+        entry = round(last_close, 2)
+        sl = round(entry * 0.995, 2)
+        tp = round(entry * 1.015, 2)
+
+        return {
+            "setup": " + ".join(setup),
+            "verovatnoća": 70 + len(setup) * 5,
+            "napomena": "Real-time manipulacije detektovane",
+            "entry": entry,
+            "sl": sl,
+            "tp": tp
+        }
+
+    return None
+
+# Za testiranje lokalno:
+# asyncio.run(analyze_market("BTCUSDT", "1m"))
