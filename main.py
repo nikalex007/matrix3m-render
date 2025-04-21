@@ -1,46 +1,47 @@
+import asyncio
 from keep_alive import keep_alive
 from manipulation_detector import analyze_market
 from telegram_notifier import send_telegram_message
 from datetime import datetime, timedelta
-import time
-
-debug_mode = True
-keep_alive()
-
-send_telegram_message("✅ Matrix3M bot je pokrenut i aktivan. Pratim BTCUSDT na 1m i 5m (Binance Futures - FAPI).")
 
 symbol = "BTCUSDT"
 timeframes = ["1m", "5m"]
+debug_mode = True
 last_status = datetime.now()
 
-while True:
-    for tf in timeframes:
-        if debug_mode:
-            print(f"📊 Proveravam: {symbol} / {tf}")
+keep_alive()
+send_telegram_message("✅ Matrix3M bot pokrenut. Pratim BTCUSDT na 1m/5m (FAPI + aiohttp mod).")
 
-        signal = analyze_market(symbol, tf)
+async def monitor():
+    global last_status
+    while True:
+        for tf in timeframes:
+            if debug_mode:
+                print(f"📊 Proveravam: {symbol} / {tf}")
 
-        if signal:
-            setup = signal.get('setup', 'Nepoznat setup')
-            verovatnoca = signal.get('verovatnoća', 'N/A')
-            napomena = signal.get('napomena', '')
-            entry = signal.get('entry', 'N/A')
-            sl = signal.get('sl', 'N/A')
-            tp = signal.get('tp', 'N/A')
+            signal = await analyze_market(symbol, tf)
 
-            active = setup.split('+') if '+' in setup else [setup]
-            all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick"]
-            manip_list = []
-            for m in all_manips:
-                if any(m.lower() in a.lower() for a in active):
-                    manip_list.append(f"[x] {m}")
-                else:
-                    manip_list.append(f"[ ] {m}")
-            manip_summary = ', '.join(manip_list)
+            if signal:
+                setup = signal.get('setup', 'Nepoznat setup')
+                verovatnoca = signal.get('verovatnoća', 'N/A')
+                napomena = signal.get('napomena', '')
+                entry = signal.get('entry', 'N/A')
+                sl = signal.get('sl', 'N/A')
+                tp = signal.get('tp', 'N/A')
 
-            tag = "✅ SIGNAL POSLAT" if len(active) >= 1 else "🟡 SLAB SIGNAL – Posmatrati"
+                active = setup.split('+') if '+' in setup else [setup]
+                all_manips = ["Spoofing", "Delta Flip", "Imbalance Spike", "CHoCH Break", "Trap Wick", "Momentum Breakout"]
+                manip_list = []
+                for m in all_manips:
+                    if any(m.lower() in a.lower() for a in active):
+                        manip_list.append(f"[x] {m}")
+                    else:
+                        manip_list.append(f"[ ] {m}")
+                manip_summary = ', '.join(manip_list)
 
-            msg = f"""🎯 SIGNAL AKTIVAN
+                tag = "✅ SIGNAL POSLAT" if len(active) >= 1 else "🟡 SLAB SIGNAL – Posmatrati"
+
+                msg = f"""🎯 SIGNAL AKTIVAN
 Symbol: {symbol} [{tf}]
 Manipulacije: {manip_summary}
 Ukupno: {len(active)}/{len(all_manips)} → {tag}
@@ -51,21 +52,22 @@ SL: {sl}
 TP: {tp}
 Napomena: {napomena}"""
 
-            print(msg)
-            send_telegram_message(msg)
+                print(msg)
+                send_telegram_message(msg)
+                last_status = datetime.now()
+            else:
+                if debug_mode:
+                    print(f"⛔ Nema signala za {symbol} / {tf}")
+
+        if datetime.now() - last_status >= timedelta(hours=2):
+            ping_msg = "⏳ Matrix3M aktivan – još nema validnih signala za BTCUSDT."
+            print(ping_msg)
+            send_telegram_message(ping_msg)
             last_status = datetime.now()
 
-        else:
-            if debug_mode:
-                print(f"⛔ Nema signala za {symbol} / {tf}")
+        if debug_mode:
+            print("🕒 Spavanje 30s...\n")
+        await asyncio.sleep(30)
 
-    # Ping ako 2 sata nema signala
-    if datetime.now() - last_status >= timedelta(hours=2):
-        ping_msg = "⏳ Matrix3M aktivan – još nema validnih signala za BTCUSDT."
-        print(ping_msg)
-        send_telegram_message(ping_msg)
-        last_status = datetime.now()
-
-    if debug_mode:
-        print("🕒 Spavanje 30 sekundi...\n")
-    time.sleep(30)
+if __name__ == "__main__":
+    asyncio.run(monitor())
