@@ -2,64 +2,61 @@ import aiohttp
 import asyncio
 import datetime
 import numpy as np
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "application/json",
-    "Accept-Language": "en-US,en;q=0.9",
-}
 
 BINANCE_BASE = "https://fapi.binance.com"
 
-async def fetch_json(session, url):
-    async with session.get(url, headers=headers) as response:
-        if response.status != 200:
-            print(f"HTTP {response.status} za {url}")
-            return None
-        return await response.json()
-
 async def fetch_klines(session, symbol, interval, limit=50):
     url = f"{BINANCE_BASE}/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
-    return await fetch_json(session, url)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    }
+    try:
+        async with session.get(url, headers=headers) as response:
+            if response.status != 200:
+                print(f"❌ HTTP {response.status} za {url}")
+                return None
+            return await response.json()
+    except Exception as e:
+        print(f"⚠️ Greška pri fetch klines: {e}")
+        return None
 
-async def fetch_orderbook(session, symbol, limit=5):
-    url = f"{BINANCE_BASE}/fapi/v1/depth?symbol={symbol}&limit={limit}"
-    return await fetch_json(session, url)
-
-def calculate_delta(candles):
-    return float(candles[-1][5]) - float(candles[-2][5])
+def analiziraj_svece(klines):
+    cene = [float(k[4]) for k in klines]
+    if len(cene) < 3:
+        return None
+    if cene[-1] > cene[-2] < cene[-3]:
+        return "Long setup (mogući bounce)"
+    if cene[-1] < cene[-2] > cene[-3]:
+        return "Short setup (mogući rejection)"
+    return None
 
 async def analyze_market(symbol, interval):
     async with aiohttp.ClientSession() as session:
-        candles = await fetch_klines(session, symbol, interval)
-        orderbook = await fetch_orderbook(session, symbol)
-
-        if not candles or not orderbook:
+        klines = await fetch_klines(session, symbol, interval)
+        if not klines or len(klines) < 10:
             print(f"⚠️ Nedovoljno podataka za {symbol} / {interval}")
             return None
 
-        delta = calculate_delta(candles)
-        top_bid = float(orderbook['bids'][0][0])
-        top_ask = float(orderbook['asks'][0][0])
-        spread = top_ask - top_bid
-
-        now = datetime.datetime.now().strftime("%H:%M:%S")
-
-        if spread < 1 and abs(delta) > 500:
-            direction = "BUY" if delta > 0 else "SELL"
+        rezultat = analiziraj_svece(klines)
+        if rezultat:
             return {
-                "setup": f"Delta spike + low spread [{direction}]",
-                "verovatnoća": "85%",
-                "napomena": f"Delta: {delta:.2f}, Spread: {spread:.2f} @ {now}",
-                "entry": top_ask if delta > 0 else top_bid,
-                "sl": top_ask + 50 if delta < 0 else top_bid - 50,
-                "tp": top_ask - 100 if delta < 0 else top_bid + 100
+                "setup": rezultat,
+                "verovatnoća": "⚡ 60-70%",
+                "napomena": "Testna verzija – detekcija po kretanju cene",
+                "entry": klines[-1][1],
+                "sl": klines[-1][3],
+                "tp": klines[-1][2]
             }
 
-        print(f"🟡 Nema signala za {symbol} / {interval}")
         return None
+
+# Test mod za lokalnu proveru
+if __name__ == "__main__":
+    symbol = "BTCUSDT"
+    interval = "1m"
+    loop = asyncio.get_event_loop()
+    result = loop.run_until_complete(analyze_market(symbol, interval))
+    if result:
+        print("✅ SIGNAL:", result)
+    else:
+        print("🚫 Nema signala")
