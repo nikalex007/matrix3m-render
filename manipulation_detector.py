@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BINANCE_BASE = "https://fapi.binance.com"
+BINANCE_BASE = "https://api1.binance.cc"  # Alternativni endpoint
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
@@ -70,6 +70,10 @@ async def analyze_market(symbol, interval):
         klines = await fetch_klines(session, symbol, interval)
         orderbook = await fetch_orderbook(session, symbol)
 
+        if klines is None:
+            print("❌ Nema klines podataka – fallback mod aktiviran.")
+            return None
+
         pokret, poruka = analyze_klines(klines)
         spoofing = detect_spoofing(orderbook)
 
@@ -83,7 +87,7 @@ async def analyze_market(symbol, interval):
             return {
                 "setup": ", ".join(setup),
                 "verovatnoća": "SREDNJA",
-                "napomena": "Testni signal sa fake headers",
+                "napomena": "Fake headers + fallback endpoint",
                 "entry": float(klines[-1][4]) if klines else None,
                 "sl": None,
                 "tp": None
